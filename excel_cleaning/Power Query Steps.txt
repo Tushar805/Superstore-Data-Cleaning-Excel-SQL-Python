@@ -1,0 +1,125 @@
+# Superstore Dataset – Data Cleaning using Excel (Power Query)
+
+## Project Overview
+This project focuses on cleaning and preparing the Superstore dataset using Excel Power Query. 
+The goal was to improve data quality, ensure consistency, and make the dataset analysis-ready 
+before performing any reporting or visualization.
+
+---
+
+## Dataset Details
+- Source: Kaggle (Superstore Dataset)
+- Original Rows: 9,994
+- Original Columns: 21
+- Final Rows After Cleaning: 9,986
+- Tool Used: Microsoft Excel (Power Query)
+
+---
+
+## Step-by-Step Work Done
+
+### Step 1: Data Backup
+- Created a backup of the original CSV/Excel file before starting any cleaning activities.
+- Ensured data safety and rollback capability.
+
+---
+
+### Step 2: Load Data into Power Query
+- Imported the dataset into Excel Power Query Editor.
+- Reviewed the initial structure and column layout.
+
+---
+
+### Step 3: Remove Irrelevant Column
+- Removed the `Row ID` column as it only represented row numbers.
+- This column had no analytical value.
+
+---
+
+### Step 4: Verify and Correct Data Types
+- Verified data types for all remaining 20 columns.
+- Converted:
+  - `Sales` → Currency
+  - `Profit` → Currency
+- Verified `Quantity` as Whole Number and `Discount` as Percentage.
+
+---
+
+### Step 5: Clean Text Columns
+- Selected all text-based columns.
+- Applied:
+  - **Trim** → removed leading and trailing spaces
+  - **Clean** → removed hidden and non-printable characters
+
+---
+
+### Step 6: Data Quality Validation
+- Enabled **Column Quality** and **Column Distribution** options.
+- Verified:
+  - 100% valid values in all columns
+  - No null or error values present
+
+---
+
+### Step 7: Remove Duplicate Records
+- Identified duplicates using a composite key:
+  - `Order ID` + `Product ID`
+- Removed exact duplicate rows.
+- Total duplicates removed: 6 rows
+
+---
+
+### Step 8: Feature Engineering – Delivery Days
+- Created a new custom column `Delivery Days` using:
+  - `Duration.Days([Ship Date] - [Order Date])`
+- This converted date information into a measurable performance metric.
+
+---
+
+### Step 9: Standardize Categorical Data
+- Standardized categorical columns for consistency:
+  - Category
+  - Sub Category
+  - Segment
+  - Shipping Mode
+  - Region
+  - State
+  - City
+  - Country
+- Applied **Capitalize Each Word** formatting.
+
+---
+
+### Step 10: Rename Columns for Clarity
+- Renamed columns to improve readability:
+  - `Ship Mode` → `Shipping Mode`
+  - `Sub-Category` → `Sub Category`
+
+---
+
+### Step 11: Final Validation
+- Re-checked data types and column values.
+- Ensured no empty cells, duplicates, or formatting issues remained.
+
+---
+
+### Step 12: Close and Load
+- Loaded the cleaned dataset back into Excel.
+- Final dataset ready for analysis and visualization.
+
+---
+
+## Outcome
+- Improved data consistency and structure.
+- Eliminated duplicates and formatting issues.
+- Dataset is now reliable and analysis-ready.
+
+---
+
+## Tools & Techniques Used
+- Excel Power Query
+- Data Type Validation
+- Text Cleaning (Trim & Clean)
+- Duplicate Handling
+- Feature Engineering
+- Data Quality Checks

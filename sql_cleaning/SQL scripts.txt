@@ -1,0 +1,178 @@
+# SQL Data Cleaning & Preparation – Full Workflow
+
+## Dataset Overview
+- Source: CSV file imported into SQL Server
+- Initial Rows: 9,994
+- Final Rows: 9,993
+- Table Name: dbo.csv
+- Backup created before transformation
+
+---
+
+## Step 1: Import Data
+- Converted Excel file to CSV
+- Imported using SQL Server Import Wizard (Flat File option)
+- Verified data types during import
+- Enabled "Allow Nulls" for all columns
+
+### Data Type Adjustments During Import:
+- Postal Code → NVARCHAR
+- Discount → FLOAT
+- Profit → FLOAT
+- Sales → FLOAT
+
+---
+
+## Step 2: Row Count Validation
+```sql
+SELECT COUNT(*) AS TotalRows FROM dbo.csv;
+
+Result: 9994 rows successfully imported
+
+---
+
+Step 3: Primary Key Strategy
+
+Retained Row_ID (unlike Excel, where it was removed)
+
+Used as a unique identifier and clustered index
+
+ALTER TABLE dbo.csv ALTER COLUMN Row_ID INT NOT NULL;
+ALTER TABLE dbo.csv ADD CONSTRAINT PK_Row_ID PRIMARY KEY (Row_ID);
+
+---
+
+Step 4: Create Derived Column (Delivery Time)
+ALTER TABLE dbo.csv ADD DaysToShip INT;
+
+UPDATE dbo.csv
+SET DaysToShip = DATEDIFF(day, Order_Date, Ship_Date);
+
+---
+
+Step 5: Handle NULL Values
+UPDATE dbo.csv
+SET Sales = ISNULL(Sales, 0),
+    Profit = ISNULL(Profit, 0),
+    Discount = ISNULL(Discount, 0);
+
+---
+
+Step 6: Clean Text Fields (Trim Spaces)
+UPDATE dbo.csv
+SET Order_ID = TRIM(Order_ID),
+    Customer_Name = TRIM(Customer_Name),
+    City = TRIM(City),
+    State = TRIM(State),
+    Product_Name = TRIM(Product_Name),
+    Segment = TRIM(Segment),
+    Country = TRIM(Country),
+    Region = TRIM(Region),
+    Category = TRIM(Category),
+    Sub_Category = TRIM(Sub_Category),
+    Ship_Mode = TRIM(Ship_Mode),
+    Customer_ID = TRIM(Customer_ID),
+    Product_ID = TRIM(Product_ID);
+
+---
+
+Step 7: Standardize Text Case
+UPDATE dbo.csv
+SET Segment = UPPER(LEFT(Segment,1)) + LOWER(SUBSTRING(Segment,2,LEN(Segment))),
+    Category = UPPER(LEFT(Category,1)) + LOWER(SUBSTRING(Category,2,LEN(Category))),
+    Sub_Category = UPPER(LEFT(Sub_Category,1)) + LOWER(SUBSTRING(Sub_Category,2,LEN(Sub_Category))),
+    Ship_Mode = UPPER(LEFT(Ship_Mode,1)) + LOWER(SUBSTRING(Ship_Mode,2,LEN(Ship_Mode))),
+    Region = UPPER(LEFT(Region,1)) + LOWER(SUBSTRING(Region,2,LEN(Region))),
+    State = UPPER(LEFT(State,1)) + LOWER(SUBSTRING(State,2,LEN(State))),
+    City = UPPER(LEFT(City,1)) + LOWER(SUBSTRING(City,2,LEN(City))),
+    Country = UPPER(LEFT(Country,1)) + LOWER(SUBSTRING(Country,2,LEN(Country)));
+
+---
+
+Step 8: Check for Hidden Characters
+SELECT Product_Name
+FROM dbo.csv
+WHERE Product_Name LIKE '%' + CHAR(10) + '%'
+   OR Product_Name LIKE '%' + CHAR(13) + '%'
+   OR Product_Name LIKE '%' + CHAR(9) + '%';
+
+---
+
+Step 9: Validate Null Values
+SELECT 
+    SUM(CASE WHEN Row_ID IS NULL THEN 1 ELSE 0 END) AS Row_ID_Nulls,
+    SUM(CASE WHEN Order_ID IS NULL THEN 1 ELSE 0 END) AS Order_ID_Nulls,
+    SUM(CASE WHEN Customer_Name IS NULL THEN 1 ELSE 0 END) AS Customer_Nulls,
+    SUM(CASE WHEN City IS NULL THEN 1 ELSE 0 END) AS City_Nulls,
+    SUM(CASE WHEN State IS NULL THEN 1 ELSE 0 END) AS State_Nulls,
+    SUM(CASE WHEN Region IS NULL THEN 1 ELSE 0 END) AS Region_Nulls,
+    SUM(CASE WHEN Category IS NULL THEN 1 ELSE 0 END) AS Category_Nulls,
+    SUM(CASE WHEN Sub_Category IS NULL THEN 1 ELSE 0 END) AS SubCat_Nulls,
+    SUM(CASE WHEN Sales IS NULL THEN 1 ELSE 0 END) AS Sales_Nulls,
+    SUM(CASE WHEN Profit IS NULL THEN 1 ELSE 0 END) AS Profit_Nulls
+FROM dbo.csv;
+
+---
+
+Step 10: Remove Duplicate Records
+WITH CTE_Duplicates AS (
+    SELECT *,
+           ROW_NUMBER() OVER (
+               PARTITION BY Order_ID, Product_ID, Customer_ID, Sales, Quantity
+               ORDER BY Row_ID
+           ) AS DuplicateCount
+    FROM dbo.csv
+)
+DELETE FROM CTE_Duplicates
+WHERE DuplicateCount > 1;
+
+
+✔ 1 duplicate removed
+✔ Final rows: 9,993
+
+---
+
+Step 11: Validate Business Logic
+SELECT Ship_Mode, AVG(DaysToShip) AS AvgDays
+FROM dbo.csv
+GROUP BY Ship_Mode;
+
+---
+
+Step 12: Fix Truncated Product Names
+ALTER TABLE dbo.csv ALTER COLUMN Product_Name VARCHAR(200);
+
+
+Re-imported CSV into temporary table dbo.Fix, then:
+
+UPDATE main
+SET main.Product_Name = source.Product_Name
+FROM dbo.csv AS main
+INNER JOIN dbo.Fix AS source
+ON main.Row_ID = source.Row_ID;
+
+
+Validation:
+
+SELECT MAX(LEN(Product_Name)) FROM dbo.csv;
+
+
+Result: 127 characters (correct).
+
+---
+
+Step 13: Rename Column
+EXEC sp_rename 'dbo.csv.Ship_Mode', 'Shipping_Mode', 'COLUMN';
+
+---
+
+Step 14: Final Validation
+SELECT * FROM dbo.csv WHERE DaysToShip < 0 OR DaysToShip > 50;
+
+
+✅ No outliers found
+✅ Dataset is clean, consistent, and analysis-ready
+
+
+---
+
