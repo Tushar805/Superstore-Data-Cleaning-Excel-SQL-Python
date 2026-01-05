@@ -57,7 +57,7 @@ Dataset used: **Superstore dataset from Kaggle**.
   - Restoring values via JOIN
 - Performed final validation checks
 
-📌 **Result**: Optimized, reliable, analytics-ready SQL table.
+📌 **Result**: Optimized, reliable, analytics-ready SQL table/CSV file.
 
 ---
 
